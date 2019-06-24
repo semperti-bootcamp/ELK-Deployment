@@ -1,0 +1,8 @@
+# YAML to Install Docker
+---
+- name: Install ELK Stack
+  hosts: all
+  become: yes
+  tasks:
+  - import_role:
+      name: elk

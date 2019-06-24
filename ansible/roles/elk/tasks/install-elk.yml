@@ -1,0 +1,80 @@
+  - name: Install Elasticsearch Repo
+    yum_repository:
+      name: Elasticsearch-7.x
+      description: Elasticsearch repository for 7.x packages
+      file: external_repos
+      baseurl: https://artifacts.elastic.co/packages/7.x/yum
+      gpgcheck: yes
+      gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+  - name: Import GPG Key
+    # shell: rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    rpm_key:
+      key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+      state: present
+
+  - name: Clean all Cache
+    command: yum clean all
+    args:
+      warn: false
+
+  - name: Create cache
+    command: yum makecache
+    args:
+      warn: false
+
+  - name: Install Dependencies
+    yum:
+      update_cache: yes
+      name: "{{ item }}"
+      state: latest
+    loop:
+      - java-1.8.0-openjdk
+      - elasticsearch
+      - kibana
+      - logstash
+      - filebeat
+
+  - name: Create Directory & Set Permissions
+    command: mkdir -p /var/log/kibana && chmod 777 /var/log/kibana
+    args:
+      warn: false
+
+  - name: Create Kibana configuration file
+    copy:
+      dest: "/etc/kibana/kibana.yml"
+      content: |
+        server.port: 5601
+        server.host: "0.0.0.0"
+        server.name: "jonathan-tissot-centos7-elk-stack.localdomain"
+        elasticsearch.hosts: ["http://localhost:9200"]
+        logging.dest: /var/log/kibana/kibana.log
+
+  - name: Create LogStash Configuration File
+    copy:
+      dest: "/etc/logstash/conf.d/logstash.conf"
+      src: "./logstash.conf"
+
+  - name: Start service at boot time
+    service: 
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    loop:
+      - elasticsearch
+      - kibana
+      - logstash
+
+  - name: Open Port 5601 - Kibana Open
+    command: firewall-cmd --add-port=5601/tcp --permanent
+    args:
+      warn: false
+  - name: Open Port 5044 - LogStash Open
+    command: firewall-cmd --add-port=5044/tcp --permanent
+    args:
+      warn: false
+
+  - name: Restart Firewall to Reload rules
+    command: firewall-cmd --reload
+    args:
+      warn: false

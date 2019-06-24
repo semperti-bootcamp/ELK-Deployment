@@ -1,0 +1,6 @@
+terraform/.terraform/
+terraform/terraform.tfstate
+app-dockerize/Code/target
+.terraform/
+*terraform.tfstate*
+*jonathan-tissot-root.json*
